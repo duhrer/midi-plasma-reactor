@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.13)
 
-set(NAME blinky) # *** Replace this with your project's name. ***
+set(NAME midi-plasma-reactor)
 
 set(PICO_PLATFORM rp2350)
-set(PICO_BOARD pico2_w)
+set(PICO_BOARD pimoroni_plasma2350)
 
 # Set the default build type to Debug if not specified
 if(NOT CMAKE_BUILD_TYPE)
@@ -29,8 +29,11 @@ add_compile_options(-Wall)
 
 pico_sdk_init()
 
+add_subdirectory(lib/pico_neopixels build)
+
 set(SOURCE_FILES
-    src/blinky.cpp # *** Replace this with your source files. ***
+    src/reactor.cpp
+    src/usb_descriptors.c
 )
 
 add_executable(${NAME}
@@ -40,12 +43,21 @@ add_executable(${NAME}
 # Pedantic warnings on for project source code only.
 set_source_files_properties(${SOURCE_FILES} PROPERTIES COMPILE_OPTIONS "-Wextra;-Wpedantic")
 
+target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
 target_link_libraries(${NAME}
     pico_stdlib
-    pico_cyw43_arch_none
+    pico_neopixel
+    hardware_pio
+    tinyusb_device
+    pico_bootsel_via_double_reset
 )
 
 target_compile_definitions(${NAME} PRIVATE)
+
+# Disable USB serial and enable UART serial
+pico_enable_stdio_usb(${NAME} 0)
+pico_enable_stdio_uart(${NAME} 1)
 
 pico_add_extra_outputs(${NAME})
 
