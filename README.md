@@ -134,21 +134,6 @@ used:
 4. `NEOPIXEL_NUM_ROWS`: As you may have an uneven number of lights, this
    variable controls the number of rows displayed. Defaults to 5.
 
-### Configuring the Processor and Board
-
-The project name, hardware platform, and device are specified in CMakeLists.txt,
-and are set appropriately for a Pico 2 W. They should be customized for your
-project:
-
-```CMake
-set(NAME blinky)
-set(PICO_PLATFORM rp2350)
-set(PICO_BOARD pico2_w)
-```
-
-You can also override these variables when invoking CMake with
-```-DPICO_BOARD=<your board>``` and ```-DPICO_BOARD=<your platform>```
-
 ### Choosing between Release and Debug Builds
 
 The CMake build is set up to build optimized Debug versions by default. To build
@@ -213,19 +198,19 @@ container.
 #### Building the Docker Image
 
 ```sh
-docker build . -t blinky
+docker build . -t midi-plasma-reactor
 ```
 
 #### Compiling the Firwmware
 
 ```sh
-docker run -v `pwd`:/project --rm blinky ./docker-compile.sh
+docker run -v `pwd`:/project --rm midi-plasma-reactor ./docker-compile.sh
 ```
 
 #### Running an interactive shell in the container
 
 ```sh
-docker run -v `pwd`:/project -it --rm blinky
+docker run -v `pwd`:/project -it --rm midi-plasma-reactor
 ```
 
 ## Updating
