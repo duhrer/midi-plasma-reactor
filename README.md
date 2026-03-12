@@ -133,6 +133,10 @@ used:
 3. `NEOPIXEL_NUM_COLUMNS`: The number of neopixel lights per row. Defaults to 13.
 4. `NEOPIXEL_NUM_ROWS`: As you may have an uneven number of lights, this
    variable controls the number of rows displayed. Defaults to 5.
+5. `MIDI_BOTTOM_NOTE`: The lowest note to display on the visualisation.  Defaults
+   to `36`.
+6. `MIDI_TOP_NOTE`: The highest note to display on the visualisation.  Defaults
+   to `84`.
 
 ### Choosing between Release and Debug Builds
 
