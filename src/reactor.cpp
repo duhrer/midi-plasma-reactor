@@ -19,10 +19,10 @@
 #define MIDI_TOP_NOTE 84
 
 // Time (in seconds) between last MIDI messages and screensaver activation.
-#define MS_PER_TICK   200
+#define MS_PER_TICK   50
 #define REDRAW_TICKS  1
-#define TIMEOUT_TICKS 5
-#define SCREENSAVER_TIMEOUT_S 300
+#define TIMEOUT_TICKS 20
+#define SCREENSAVER_TIMEOUT_S 30
 // State variables
 
 // We can only have one timer callback running, so we use "ticks" to decide how
@@ -63,56 +63,10 @@ void tud_resume_cb(void) {}
 
 // End TinyUSB Callbacks
 
-//--------------------------------------------------------------------+
-// MIDI Tasks
-//--------------------------------------------------------------------+
-void midi_client_task(void)
-{
-  // Read any incoming messages from our primary USB port.
-  while (tud_midi_available()) {
-    uint8_t incoming_packet[4];
-    tud_midi_packet_read(incoming_packet);
-
-    // The first byte is unique to USB MIDI.  The last three are common to other
-    // MIDI, i.e. the first byte is status, and for notes, the second is note,
-    // the third is velocity.
-
-    int type = incoming_packet[1] >> 4;
-
-    if (type == MIDI_CIN_NOTE_OFF || type == MIDI_CIN_NOTE_ON || type == MIDI_CIN_POLY_KEYPRESS) {
-        // We've received a MIDI note message, so reset the clock.
-        seconds_since_last_MIDI_message = 0;
-
-        int note = incoming_packet[2];
-        int velocity = (type == MIDI_CIN_NOTE_OFF) ? 0 : incoming_packet[3];
-
-        global_notes_held[note] = velocity;
-    }
-  }
-}
-
 // This approach may bite us if we start working with a wider range of lights.
 uint32_t get_colour(uint8_t r, uint8_t g, uint8_t b) {
     uint32_t colour = ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
     return colour;
-}
-
-void display_screen_saver() {
-    // Cycle each channel at different rates.
-    int red = (ticks % 256);
-    int green = (ticks % 128) * 2;
-    int blue = (ticks % 512) / 2;
-
-
-    // This seems to not correctly account for the channel order, so we use our
-    // own function.
-    //
-    // uint32_t current_colour = pixels.Color(0, 0, brightness);
-
-    uint32_t current_colour = get_colour(red, green, blue);
-
-    pixels.fill(current_colour, 0, NEOPIXEL_TOTAL_LIGHTS);
-    pixels.show();
 }
 
 void update_single_cell (uint32_t *grid, int index, uint8_t red_to_add, uint8_t green_to_add, uint8_t blue_to_add) {
@@ -183,14 +137,65 @@ void display_midi_visualisation(uint32_t *grid) {
     pixels.show();
 }
 
+//--------------------------------------------------------------------+
+// MIDI Tasks
+//--------------------------------------------------------------------+
+void midi_client_task(void)
+{
+    bool hasChanges = false;
+  // Read any incoming messages from our primary USB port.
+  while (tud_midi_available()) {
+    uint8_t incoming_packet[4];
+    tud_midi_packet_read(incoming_packet);
+
+    // The first byte is unique to USB MIDI.  The last three are common to other
+    // MIDI, i.e. the first byte is status, and for notes, the second is note,
+    // the third is velocity.
+
+    int type = incoming_packet[1] >> 4;
+
+    if (type == MIDI_CIN_NOTE_OFF || type == MIDI_CIN_NOTE_ON || type == MIDI_CIN_POLY_KEYPRESS) {
+        int note = incoming_packet[2];
+        int velocity = (type == MIDI_CIN_NOTE_OFF) ? 0 : incoming_packet[3];
+
+        global_notes_held[note] = velocity;
+
+        hasChanges = true;
+    }
+  }
+  if (hasChanges) {
+    // We've received a MIDI note message, so reset the clock.
+    seconds_since_last_MIDI_message = 0;
+
+    uint32_t grid_colours[NEOPIXEL_TOTAL_LIGHTS] = { 0 };
+    update_midi_visualisation(grid_colours, global_notes_held);
+    display_midi_visualisation(grid_colours);
+  }
+}
+
+void display_screen_saver() {
+    // Cycle each channel at different rates.
+    int red = (ticks % 256);
+    int green = (ticks % 128) * 2;
+    int blue = (ticks % 512) / 2;
+
+
+    // This seems to not correctly account for the channel order, so we use our
+    // own function.
+    //
+    // uint32_t current_colour = pixels.Color(0, 0, brightness);
+
+    uint32_t current_colour = get_colour(red, green, blue);
+
+    pixels.fill(current_colour, 0, NEOPIXEL_TOTAL_LIGHTS);
+    pixels.show();
+}
+
 // Timer callback
 void redraw() {
-    if (seconds_since_last_MIDI_message < SCREENSAVER_TIMEOUT_S) {
-        uint32_t grid_colours[NEOPIXEL_TOTAL_LIGHTS] = { 0 };
-        update_midi_visualisation(grid_colours, global_notes_held);
-        display_midi_visualisation(grid_colours);
-    }
-    else {
+    // The screen saver is drawn from the timer.  The MIDI visualisation is
+    // drawn in response to MIDI messages.
+    if (seconds_since_last_MIDI_message > SCREENSAVER_TIMEOUT_S) {
         display_screen_saver();
     }
 }
