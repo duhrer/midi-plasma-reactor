@@ -99,22 +99,28 @@ void update_midi_visualisation (uint32_t *grid, uint8_t *notes_held) {
             }
             else {
                 int note_range_pct = 100 * (note - MIDI_BOTTOM_NOTE) / (MIDI_TOP_NOTE - MIDI_BOTTOM_NOTE);
-                column = ((NEOPIXEL_NUM_COLUMNS * note_range_pct) / 100) - 1;
+                column = ((NEOPIXEL_NUM_COLUMNS * note_range_pct) / 100);
             }
-
-            // Note velocity controls how many rows are filled from bottom to
-            // top. TODO: Make this fill from the centre out?
-            int bars = velocity / (127.0 / NEOPIXEL_NUM_ROWS);
-            
+           
             // Each note's colour is determined by its pitch, with a proportion of
             // red/green/blue spanning the full range of pitches.
             uint8_t note_red = (note <= 60) ? 255 * note / 60 : 0; // Covers the note range 0-60
             uint8_t note_blue = (note >= 40 && note <= 100) ? 255 * (note - 40) / 60: 0; // Covers the note range 40-100
             uint8_t note_green = (note >= 60) ? 255 * (note - 60) / 60: 0; // Covers the note range 60-120
 
-            for (int row = NEOPIXEL_NUM_ROWS - 1; row >= NEOPIXEL_NUM_ROWS - bars; row--) {
+            int brightness_change_per_row = 100 / NEOPIXEL_NUM_ROWS;
+
+            for (int row = 0; row < NEOPIXEL_NUM_ROWS; row++) {
+                // Display the full intensity on the top row and fade it to the
+                // bottom of the column.
+                int brightness_pct = brightness_change_per_row * (row + 1);
+
+                uint8_t cell_red = (note_red * brightness_pct) / 100;
+                uint8_t cell_blue = (note_blue * brightness_pct) / 100;
+                uint8_t cell_green = (note_green * brightness_pct) / 100;
+
                 int column_index = (row * NEOPIXEL_NUM_COLUMNS) + column;
-                update_single_cell(grid, column_index, note_red, note_green, note_blue);
+                update_single_cell(grid, column_index, cell_red, cell_green, cell_blue);
             }
         }
     }
@@ -226,7 +232,7 @@ void startup_animation () {
 
     pixels.fill(test_colour, light_index, NEOPIXEL_NUM_COLUMNS);
     pixels.show();
-    sleep_ms(250);
+    sleep_ms(100);
   }
 
   // The less easy part, test each column, taking into account that, since we
@@ -241,10 +247,10 @@ void startup_animation () {
         pixels.setPixelColor(pixel_index, test_colour);
     }
     pixels.show();
-    sleep_ms(250);
+    sleep_ms(100);
   }
 
-  sleep_ms(250);
+  sleep_ms(100);
 }
 
 int main() {
