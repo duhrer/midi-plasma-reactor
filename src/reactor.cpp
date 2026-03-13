@@ -10,7 +10,8 @@
 
 // preprocessor directives that control our behaviour 
 #define NEOPIXEL_PIN 15
-#define NEOPIXEL_TOTAL_LIGHTS 65
+#define NEOPIXEL_TOTAL_LIGHTS 66
+#define NEOPIXEL_USED_LIGHTS 65
 #define NEOPIXEL_NUM_COLUMNS 13
 #define NEOPIXEL_NUM_ROWS 5
 
@@ -173,7 +174,7 @@ void midi_client_task(void)
     // We've received a MIDI note message, so reset the clock.
     seconds_since_last_MIDI_message = 0;
 
-    uint32_t grid_colours[NEOPIXEL_TOTAL_LIGHTS] = { 0 };
+    uint32_t grid_colours[NEOPIXEL_USED_LIGHTS] = { 0 };
     update_midi_visualisation(grid_colours, global_notes_held);
     display_midi_visualisation(grid_colours);
   }
@@ -193,7 +194,7 @@ void display_screen_saver() {
 
     uint32_t current_colour = get_colour(red, green, blue);
 
-    pixels.fill(current_colour, 0, NEOPIXEL_TOTAL_LIGHTS);
+    pixels.fill(current_colour, 0, NEOPIXEL_USED_LIGHTS);
     pixels.show();
 }
 
